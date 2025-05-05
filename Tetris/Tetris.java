@@ -224,7 +224,7 @@ public class Tetris extends JPanel implements ActionListener, KeyListener {
         if (isCollision()) {
             currentPiece.shape = old;
         } else {
-            SfxPlayer.play("Sfx/rotate.wav");
+            SfxPlayer.play("");
         }
     }
     @Override
