@@ -233,6 +233,7 @@ public class Tetris extends JPanel implements ActionListener, KeyListener {
 
         int key = e.getKeyCode();
 
+<<<<<<< HEAD
         if (key == KeyEvent.VK_P) {
             if (!isPaused) {
                 isPaused = true;
@@ -260,6 +261,24 @@ public class Tetris extends JPanel implements ActionListener, KeyListener {
 
         if (isPaused) return;
 
+=======
+        // ➤ P 鍵：切換暫停狀態
+        if (key == KeyEvent.VK_P) {
+            isPaused = !isPaused;
+            if (isPaused) {
+                timer.stop();
+            } else {
+                timer.start();
+            }
+            repaint();  // 顯示 PAUSED 訊息
+            return;
+        }
+
+        // ➤ 如果正在暫停，就不處理其他按鍵
+        if (isPaused) return;
+
+        // ➤ 控制操作區
+>>>>>>> c5e929c908c9f89f3aece63c411bdec75c3311cf
         if (key == KeyEvent.VK_LEFT) {
         pieceX--;
         if (isCollision()) pieceX++;
