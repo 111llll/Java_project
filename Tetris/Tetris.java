@@ -17,8 +17,9 @@ public class Tetris extends JPanel implements ActionListener, KeyListener {
     private int score = 0;
     private boolean gameOver = false;
     private BgmPlayer bgm;
-
     private Random random = new Random();
+    private boolean isPaused = false;
+
 
     public Tetris() {
         setPreferredSize(new Dimension((BOARD_WIDTH + 5) * CELL_SIZE, BOARD_HEIGHT * CELL_SIZE));
@@ -117,6 +118,11 @@ public class Tetris extends JPanel implements ActionListener, KeyListener {
             g.setColor(Color.RED);
             g.drawString("GAME OVER", BOARD_WIDTH * CELL_SIZE + 20, 60);
         }
+        if (isPaused && !gameOver) {
+            g.setColor(Color.YELLOW);
+            g.drawString("PAUSED", BOARD_WIDTH * CELL_SIZE + 20, 80);
+        }
+        
     }
 
     @Override
@@ -221,33 +227,62 @@ public class Tetris extends JPanel implements ActionListener, KeyListener {
             SfxPlayer.play("Sfx/rotate.wav");
         }
     }
-
     @Override
     public void keyPressed(KeyEvent e) {
         if (gameOver) return;
 
         int key = e.getKeyCode();
+
+        // ➤ P 鍵：切換暫停狀態
+        if (key == KeyEvent.VK_P) {
+            isPaused = !isPaused;
+            if (isPaused) {
+                timer.stop();
+            } else {
+                timer.start();
+            }
+            repaint();  // 顯示 PAUSED 訊息
+            return;
+        }
+
+        // ➤ 如果正在暫停，就不處理其他按鍵
+        if (isPaused) return;
+
+        // ➤ 控制操作區
         if (key == KeyEvent.VK_LEFT) {
-            pieceX--;
-            if (isCollision()) pieceX++;
+        pieceX--;
+        if (isCollision()) pieceX++;
         } else if (key == KeyEvent.VK_RIGHT) {
             pieceX++;
             if (isCollision()) pieceX--;
         } else if (key == KeyEvent.VK_DOWN) {
             pieceY++;
             if (isCollision()) {
-                pieceY--;
+             pieceY--;
                 fixPiece();
                 clearLines();
-                spawnNewPiece();
+             spawnNewPiece();
             }
         } else if (key == KeyEvent.VK_UP) {
             rotate(true);
         } else if (key == KeyEvent.VK_SLASH) {
             rotate(false);
+        } else if (key == KeyEvent.VK_SPACE) {
+            while (!isCollision()) {
+                pieceY++;
+            }
+            pieceY--;
+            fixPiece();
+            clearLines();
+            spawnNewPiece();
         }
+
         repaint();
     }
+
+
+    
+
 
     @Override
     public void keyReleased(KeyEvent e) {}
