@@ -215,10 +215,28 @@ public class Tetris extends JPanel implements ActionListener, KeyListener {
 
     private void rotate(boolean clockwise) {
         Point[] rotated = new Point[4];
+    
+        // Step 1: 找出中心點（使用平均座標法）
+        double centerX = 0, centerY = 0;
+        for (Point p : currentPiece.shape) {
+            centerX += p.x;
+            centerY += p.y;
+        }
+        centerX /= 4.0;
+        centerY /= 4.0;
+    
         for (int i = 0; i < 4; i++) {
             Point p = currentPiece.shape[i];
-            rotated[i] = clockwise ? new Point(-p.y, p.x) : new Point(p.y, -p.x);
+    
+            // Step 2~4: 平移到原點 → 旋轉 → 移回中心
+            int dx = p.x - (int)Math.round(centerX);
+            int dy = p.y - (int)Math.round(centerY);
+            int newX = clockwise ? -dy : dy;
+            int newY = clockwise ? dx : -dx;
+    
+            rotated[i] = new Point(newX + (int)Math.round(centerX), newY + (int)Math.round(centerY));
         }
+    
         Point[] old = currentPiece.shape;
         currentPiece.shape = rotated;
         if (isCollision()) {
@@ -227,6 +245,7 @@ public class Tetris extends JPanel implements ActionListener, KeyListener {
             SfxPlayer.play("Sfx/rotate.wav");
         }
     }
+    
     @Override
     public void keyPressed(KeyEvent e) {
         if (gameOver) return;
