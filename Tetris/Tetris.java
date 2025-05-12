@@ -32,7 +32,7 @@ public class Tetris extends JPanel implements ActionListener, KeyListener {
 
         spawnNewPiece();
 
-        timer = new Timer(700, this);
+        timer = new Timer(500, this);
         timer.start();
     }
 
@@ -57,23 +57,28 @@ public class Tetris extends JPanel implements ActionListener, KeyListener {
     }
 
     private void showRestartDialog() {
-        int option = JOptionPane.showOptionDialog(
-                this,
-                "得分:" + score + "\n是否重新遊戲?",
-                "遊戲結束",
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.QUESTION_MESSAGE,
-                null,
-                new String[]{"重新", "退出"},
-                "Restart"
-        );
+    int option = JOptionPane.showOptionDialog(
+            this,
+            "得分:" + score + "\n是否重新遊戲?",
+            "遊戲結束",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.QUESTION_MESSAGE,
+            null,
+            new String[]{"重新", "回到主選單"},
+            "重新"
+    );
 
-        if (option == JOptionPane.YES_OPTION) {
-            resetGame();
-        } else {
-            System.exit(0);
-        }
+    if (option == JOptionPane.YES_OPTION) {
+        resetGame();
+    } else {
+        // 回到主選單
+        JFrame topFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
+        bgm.stop();
+        topFrame.dispose(); // 關掉當前遊戲視窗
+        new MainMenu().setVisible(true); // 開啟新的主選單視窗
     }
+}
+
 
     private void resetGame() {
         board = new int[BOARD_HEIGHT][BOARD_WIDTH];
@@ -214,79 +219,78 @@ public class Tetris extends JPanel implements ActionListener, KeyListener {
     }
 
     private void rotate(boolean clockwise) {
-        Point[] rotated = new Point[4];
-        for (int i = 0; i < 4; i++) {
-            Point p = currentPiece.shape[i];
-            rotated[i] = clockwise ? new Point(-p.y, p.x) : new Point(p.y, -p.x);
-        }
-        Point[] old = currentPiece.shape;
-        currentPiece.shape = rotated;
-        if (isCollision()) {
-            currentPiece.shape = old;
-        } else {
-            SfxPlayer.play("");
+    // O 方塊不旋轉（type == 3）
+    if (currentPiece.type == 3) return;
+
+    Point[] rotated = new Point[4];
+    double centerX = 0, centerY = 0;
+    for (Point p : currentPiece.shape) {
+        centerX += p.x;
+        centerY += p.y;
+    }
+    centerX /= 4.0;
+    centerY /= 4.0;
+
+    for (int i = 0; i < 4; i++) {
+        Point p = currentPiece.shape[i];
+        int dx = p.x - (int)Math.round(centerX);
+        int dy = p.y - (int)Math.round(centerY);
+        int newX = clockwise ? -dy : dy;
+        int newY = clockwise ? dx : -dx;
+        rotated[i] = new Point(newX + (int)Math.round(centerX), newY + (int)Math.round(centerY));
+    }
+
+    // 每第二次旋轉時，特定方塊平移一格
+    int newPieceX = pieceX;
+    if (clockwise &&
+        (currentPiece.type == 0 || currentPiece.type == 4 || currentPiece.type == 6)) {
+        currentPiece.rotationCount++;
+        if (currentPiece.rotationCount % 2 == 0) {
+            newPieceX = pieceX - 1; // 向左移一格
         }
     }
+
+    // 檢查新位置是否合法
+    boolean collision = false;
+    for (Point p : rotated) {
+        int x = newPieceX + p.x;
+        int y = pieceY + p.y;
+        if (x < 0 || x >= BOARD_WIDTH || y < 0 || y >= BOARD_HEIGHT || board[y][x] != 0) {
+            collision = true;
+            break;
+        }
+    }
+
+    if (!collision) {
+        currentPiece.shape = rotated;
+        pieceX = newPieceX;
+        SfxPlayer.play("Sfx/rotate.wav");
+    }
+}
+
+    
     @Override
     public void keyPressed(KeyEvent e) {
         if (gameOver) return;
 
         int key = e.getKeyCode();
 
+        // ➤ P 鍵：切換暫停狀態
         if (key == KeyEvent.VK_P) {
-            if (!isPaused) {
-                isPaused = true;
+            isPaused = !isPaused;
+            if (isPaused) {
                 timer.stop();
-                int option = JOptionPane.showOptionDialog(
-                    this,
-                    "暫停中，是否繼續遊戲？",
-                    "遊戲暫停",
-                    JOptionPane.YES_NO_OPTION,
-                    JOptionPane.INFORMATION_MESSAGE,
-                    null,
-                    new String[]{"繼續", "退出"},
-                    "繼續"
-                );
-                if (option == JOptionPane.YES_OPTION) {
-                    isPaused = false;
-                    timer.start();
-                } else {
-                    System.exit(0);
-                }
+            } else {
+                timer.start();
             }
-            repaint();
+            repaint();  // 顯示 PAUSED 訊息
             return;
         }
 
+        // ➤ 如果正在暫停，就不處理其他按鍵
         if (isPaused) return;
 
-        if (key == KeyEvent.VK_P) {
-            if (!isPaused) {
-                isPaused = true;
-                timer.stop();
-                int option = JOptionPane.showOptionDialog(
-                    this,
-                    "暫停中，是否繼續遊戲？",
-                    "遊戲暫停",
-                    JOptionPane.YES_NO_OPTION,
-                    JOptionPane.INFORMATION_MESSAGE,
-                    null,
-                    new String[]{"繼續", "退出"},
-                    "繼續"
-                );
-                if (option == JOptionPane.YES_OPTION) {
-                    isPaused = false;
-                    timer.start();
-                } else {
-                    System.exit(0);
-                }
-            }
-            repaint();
-            return;
-        }
-
-        if (isPaused) return;
-
+        // ➤ 控制操作區
         if (key == KeyEvent.VK_LEFT) {
         pieceX--;
         if (isCollision()) pieceX++;
@@ -328,20 +332,22 @@ public class Tetris extends JPanel implements ActionListener, KeyListener {
     @Override
     public void keyTyped(KeyEvent e) {}
 
-    public static void main(String[] args) {
-        JFrame frame = new JFrame("Tetris");
-        Tetris tetris = new Tetris();
-        frame.add(tetris);
-        frame.pack();
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setLocationRelativeTo(null);
-        frame.setVisible(true);
-    }
+    // public static void main(String[] args) {
+    //     JFrame frame = new JFrame("Tetris");
+    //     Tetris tetris = new Tetris();
+    //     frame.add(tetris);
+    //     frame.pack();
+    //     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    //     frame.setLocationRelativeTo(null);
+    //     frame.setVisible(true);
+    // }
 }
 
 class Piece {
     public Point[] shape;
     public Color color;
+    public int type; // 加入方塊類型編號
+    public int rotationCount = 0; // 記錄旋轉次數
 
     private static final Point[][] shapes = {
             {new Point(0,0), new Point(1,0), new Point(2,0), new Point(3,0)}, // I
@@ -361,6 +367,8 @@ class Piece {
     public static Piece getRandomPiece() {
         int idx = new Random().nextInt(shapes.length);
         Piece p = new Piece();
+        p.type = idx;          // 把型別記起來
+        p.rotationCount = 0;   // 初始化旋轉計數
         p.shape = Arrays.stream(shapes[idx]).map(pt -> new Point(pt.x, pt.y)).toArray(Point[]::new);
         p.color = colors[idx];
         return p;
