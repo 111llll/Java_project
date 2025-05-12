@@ -68,23 +68,74 @@ public class MainMenu extends JFrame implements ActionListener {
     }
 
     private void showInstructions() {
-        String message = """
-            操作說明：
-            
-            玩家一：
-            W/E：順時針/逆時針旋轉
-            A/D：左/右移動
-            S：加速下降
-            X：硬掉落
+    showSinglePlayerInstructions();
+}
 
-            玩家二：
-            ↑/／：順時針/逆時針旋轉
-            ←/→：左/右移動
-            ↓：加速下降
-            Space：硬掉落
-        """;
-        JOptionPane.showMessageDialog(this, message, "操作方法", JOptionPane.INFORMATION_MESSAGE);
+private void showSinglePlayerInstructions() {
+    String single = """
+        單人模式操作說明：
+
+        ↑：順時針旋轉
+        ／：逆時針旋轉
+        ←／→：左／右移動
+        ↓：加速下降
+        空白鍵：硬掉落
+        P：暫停
+    """;
+
+    int option = JOptionPane.showOptionDialog(
+        this,
+        single,
+        "單人操作說明",
+        JOptionPane.YES_NO_OPTION,
+        JOptionPane.INFORMATION_MESSAGE,
+        null,
+        new String[]{"下一頁（雙人）", "關閉"},
+        "下一頁（雙人）"
+    );
+
+    if (option == JOptionPane.YES_OPTION) {
+        showTwoPlayerInstructions();
     }
+}
+
+private void showTwoPlayerInstructions() {
+    String dual = """
+        雙人模式操作說明：
+
+        玩家一（左側）：
+        W／E：順時針／逆時針旋轉
+        A／D：左／右移動
+        S：加速下降
+        X：硬掉落
+
+        玩家二（右側）：
+        ↑：順時針旋轉
+        ／：逆時針旋轉
+        ←／→：左／右移動
+        ↓：加速下降
+        .：硬掉落
+
+        任一玩家遊戲結束即結束對局
+    """;
+
+    int option = JOptionPane.showOptionDialog(
+        this,
+        dual,
+        "雙人操作說明",
+        JOptionPane.YES_NO_OPTION,
+        JOptionPane.INFORMATION_MESSAGE,
+        null,
+        new String[]{"上一頁（單人）", "關閉"},
+        "上一頁（單人）"
+    );
+
+    if (option == JOptionPane.YES_OPTION) {
+        showSinglePlayerInstructions();
+    }
+}
+
+
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {

@@ -103,7 +103,7 @@ public class TetrisBoard extends JPanel implements ActionListener {
                 rotate(true);
             } else if (key == KeyEvent.VK_SLASH) {
                 rotate(false);
-            } else if (key == KeyEvent.VK_SPACE) {
+            } else if (key == KeyEvent.VK_PERIOD) {
                 while (!isCollision()) pieceY++;
                 pieceY--;
                 fixPiece();
