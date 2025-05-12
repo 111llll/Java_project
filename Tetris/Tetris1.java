@@ -19,12 +19,21 @@ public class Tetris1 extends JPanel implements ActionListener, KeyListener {
 
     private final int[] levelSpeeds = {500, 450, 400, 350, 300, 250, 200, 150, 100, 80, 60};
     private final Color[] levelBackgrounds = {
-        Color.BLACK, Color.DARK_GRAY, Color.GRAY, Color.BLUE, Color.CYAN,
-        Color.GREEN.darker(), Color.ORANGE.darker(), Color.MAGENTA.darker(),
-        Color.RED.darker(), Color.YELLOW.darker(), Color.WHITE
+    new Color(0, 0, 0),
+    new Color(20, 20, 20),
+    new Color(40, 40, 40),
+    new Color(60, 60, 60),
+    new Color(80, 80, 80),
+    new Color(100, 100, 100),
+    new Color(120, 120, 120),
+    new Color(150, 150, 150),
+    new Color(180, 180, 180),
+    new Color(210, 210, 210),
+    new Color(235, 235, 235)
     };
 
-    private BgmPlayer bgm;
+
+    private BgmPlayer1 bgm;
 
     public Tetris1() {
         setPreferredSize(new Dimension((BOARD_WIDTH + 5) * CELL_SIZE, BOARD_HEIGHT * CELL_SIZE));
@@ -32,7 +41,7 @@ public class Tetris1 extends JPanel implements ActionListener, KeyListener {
         setFocusable(true);
         addKeyListener(this);
 
-        bgm = new BgmPlayer();
+        bgm = new BgmPlayer1();
         bgm.changeTrack(level);
 
         spawnNewPiece();
@@ -205,9 +214,7 @@ public class Tetris1 extends JPanel implements ActionListener, KeyListener {
         currentPiece.shape = rotated;
         if (isCollision()) {
             currentPiece.shape = old;
-        } else {
-            SfxPlayer.play("Sfx/rotate.wav");
-        }
+        } 
     }
 
     @Override public void keyPressed(KeyEvent e) {
@@ -275,37 +282,6 @@ class Piece {
         p.shape = Arrays.stream(shapes[idx]).map(pt -> new Point(pt.x, pt.y)).toArray(Point[]::new);
         p.color = colors[idx];
         return p;
-    }
-}
-
-// BgmPlayer 類別
-class BgmPlayer {
-    private Clip clip;
-    private final String[] tracks = {
-        "SoundTrack/Minecraft.wav",
-        "SoundTrack/Living Mice.wav",
-        "SoundTrack/Key.wav"
-    };
-
-    public void changeTrack(int level) {
-        stop();
-        int index = (level - 1) % tracks.length;
-        try {
-            AudioInputStream stream = AudioSystem.getAudioInputStream(new File(tracks[index]));
-            clip = AudioSystem.getClip();
-            clip.open(stream);
-            clip.loop(Clip.LOOP_CONTINUOUSLY);
-            clip.start();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void stop() {
-        if (clip != null && clip.isRunning()) {
-            clip.stop();
-            clip.close();
-        }
     }
 }
 
