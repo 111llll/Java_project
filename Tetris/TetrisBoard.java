@@ -11,6 +11,9 @@ public class TetrisBoard extends JPanel implements ActionListener {
 
     private Timer timer;
     private Piece currentPiece;
+    private Piece holdPiece = null;
+    private boolean holdUsed = false;
+    private Piece[] nextQueue = new Piece[3];
     private int pieceX = 4;
     private int pieceY = 0;
     private int[][] board = new int[BOARD_HEIGHT][BOARD_WIDTH];
@@ -43,15 +46,45 @@ public class TetrisBoard extends JPanel implements ActionListener {
     }
 
     private void spawnNewPiece() {
-        currentPiece = Piece.getRandomPiece();
+        if (nextQueue[0] == null) {
+            for (int i = 0; i < 3; i++) {
+                nextQueue[i] = Piece.getRandomPiece();
+            }
+        }
+
+        currentPiece = nextQueue[0];
+        nextQueue[0] = nextQueue[1];
+        nextQueue[1] = nextQueue[2];
+        nextQueue[2] = Piece.getRandomPiece();
+
         pieceX = 4;
         pieceY = 0;
-        rotationCount = 0;
+        holdUsed = false;
+
         if (isCollision()) {
             gameOver = true;
             SfxPlayer.play("Sfx/gg.wav");
             triggerGameOver(opponent.playerName);
         }
+    }
+    private void holdCurrentPiece() {
+        if (holdUsed) return;
+
+        Piece temp = holdPiece;
+        holdPiece = new Piece(currentPiece);
+        if (temp == null) {
+            spawnNewPiece();
+        } else {
+            currentPiece = new Piece(temp);
+            pieceX = 4;
+            pieceY = 0;
+            if (isCollision()) {
+                gameOver = true;
+                timer.stop();
+                return;
+            }
+        }
+        holdUsed = true;
     }
 
     public void dispatchKeyEvent(KeyEvent e) {
@@ -73,6 +106,9 @@ public class TetrisBoard extends JPanel implements ActionListener {
                     clearLines();
                     spawnNewPiece();
                 }
+            } else if (key == KeyEvent.VK_C) {
+                holdCurrentPiece();
+
             } else if (key == KeyEvent.VK_W) {
                 rotate(true);
             } else if (key == KeyEvent.VK_E) {
@@ -99,6 +135,8 @@ public class TetrisBoard extends JPanel implements ActionListener {
                     clearLines();
                     spawnNewPiece();
                 }
+            } else if (key == KeyEvent.VK_COMMA) {
+                holdCurrentPiece();
             } else if (key == KeyEvent.VK_UP) {
                 rotate(true);
             } else if (key == KeyEvent.VK_SLASH) {
@@ -141,7 +179,6 @@ public class TetrisBoard extends JPanel implements ActionListener {
         if (isCollision()) {
             currentPiece.shape = old;
         } else {
-            SfxPlayer.play("Sfx/rotate.wav");
             rotationCount++;
             if ((currentPiece.type == 0 || currentPiece.type == 4 || currentPiece.type == 6) && clockwise && rotationCount % 2 == 0) {
                 pieceX--;
@@ -275,7 +312,18 @@ public class TetrisBoard extends JPanel implements ActionListener {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-
+        g.setColor(Color.white);
+        g.drawString("NEXT", BOARD_WIDTH * CELL_SIZE + 10, 300);
+        g.drawString("HOLD", BOARD_WIDTH * CELL_SIZE + 10, 80);
+        for (int i = 0; i < 3; i++) {
+            Piece next = nextQueue[i];
+            if (next != null) {
+                drawMiniPiece(g, next, BOARD_WIDTH * CELL_SIZE + 10, 320 + i * 60, 15);
+            }
+        }
+        if (holdPiece != null) {
+            drawMiniPiece(g, holdPiece, BOARD_WIDTH * CELL_SIZE + 10, 100, 15);
+        }
         g.setColor(Color.DARK_GRAY);
         for (int i = 0; i <= BOARD_WIDTH; i++) {
             g.drawLine(i * CELL_SIZE, 0, i * CELL_SIZE, BOARD_HEIGHT * CELL_SIZE);
@@ -301,11 +349,34 @@ public class TetrisBoard extends JPanel implements ActionListener {
         }
 
         g.setColor(Color.WHITE);
-        g.drawString(playerName + " 分數: " + score, BOARD_WIDTH * CELL_SIZE + 10, 20);
+        g.drawString(playerName + " \n\r分數: " + score, BOARD_WIDTH * CELL_SIZE + 10, 20);
         if (gameOver) {
             g.setColor(Color.RED);
             g.drawString("GAME OVER", BOARD_WIDTH * CELL_SIZE + 10, 50);
         }
+    }
+    private void drawMiniPiece(Graphics g, Piece piece, int startX, int startY, int size) {
+        for (Point p : piece.shape) {
+            int x = startX + p.x * size;
+            int y = startY + p.y * size;
+            drawMiniBlock(g, x, y, size, piece.color);
+        }
+    }
+
+    private void drawMiniBlock(Graphics g, int x, int y, int size, Color baseColor) {
+        g.setColor(baseColor);
+        g.fillRect(x, y, size, size);
+
+        g.setColor(baseColor.brighter());
+        g.fillRect(x, y, size, size / 6);
+        g.fillRect(x, y, size / 6, size);
+
+        g.setColor(baseColor.darker());
+        g.fillRect(x, y + size - size / 6, size, size / 6);
+        g.fillRect(x + size - size / 6, y, size / 6, size);
+
+        g.setColor(Color.BLACK);
+        g.drawRect(x, y, size, size);
     }
 
     private void draw3DBlock(Graphics g, int x, int y, Color baseColor) {
@@ -345,7 +416,12 @@ class Piece {
             Color.CYAN, Color.BLUE, Color.ORANGE, Color.YELLOW,
             Color.GREEN, Color.MAGENTA, Color.RED
     };
-
+    public Piece() {}
+    public Piece(Piece other) {
+        this.shape = Arrays.stream(other.shape).map(p -> new Point(p.x, p.y)).toArray(Point[]::new);
+        this.color = other.color;
+        this.type = other.type;
+    }
     public static Piece getRandomPiece() {
         int idx = new Random().nextInt(shapes.length);
         Piece p = new Piece();

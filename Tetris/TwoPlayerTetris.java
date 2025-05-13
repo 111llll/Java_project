@@ -1,7 +1,6 @@
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
-import java.awt.event.KeyEventDispatcher;
 import java.awt.KeyboardFocusManager;
 
 public class TwoPlayerTetris extends JFrame {

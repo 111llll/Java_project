@@ -10,6 +10,9 @@ public class Tetris extends JPanel implements ActionListener, KeyListener {
     private final int CELL_SIZE = 30;
 
     private Timer timer;
+    private Piece holdPiece = null;
+    private boolean holdUsed = false;
+    private Piece[] nextQueue = new Piece[3];
     private Piece currentPiece;
     private int pieceX = 4;
     private int pieceY = 0;
@@ -27,8 +30,8 @@ public class Tetris extends JPanel implements ActionListener, KeyListener {
         setFocusable(true);
         addKeyListener(this);
 
-        bgm = new BgmPlayer();
-        bgm.playAllLooped();
+        bgm = new BgmPlayer("SoundTrack/Minecraft.wav");
+        bgm.playLooped();
 
         spawnNewPiece();
 
@@ -37,24 +40,50 @@ public class Tetris extends JPanel implements ActionListener, KeyListener {
     }
 
     private void spawnNewPiece() {
-        currentPiece = Piece.getRandomPiece();
+    if (nextQueue[0] == null) {
+        for (int i = 0; i < 3; i++) {
+            nextQueue[i] = Piece.getRandomPiece();
+        }
+    }
+
+    currentPiece = nextQueue[0];
+    nextQueue[0] = nextQueue[1];
+    nextQueue[1] = nextQueue[2];
+    nextQueue[2] = Piece.getRandomPiece();
+
+    pieceX = 4;
+    pieceY = 0;
+    holdUsed = false;
+
+    if (isCollision()) {
+        gameOver = true;
+        timer.stop();
+        SfxPlayer.play("Sfx/gg.wav");
+        new Thread(() -> {
+            try { Thread.sleep(3800); } catch (InterruptedException ex) {}
+            SwingUtilities.invokeLater(this::showRestartDialog);
+        }).start();
+    }
+}
+
+private void holdCurrentPiece() {
+    if (holdUsed) return;
+
+    Piece temp = holdPiece;
+    holdPiece = new Piece(currentPiece); // clone
+    if (temp == null) {
+        spawnNewPiece();
+    } else {
+        currentPiece = new Piece(temp);
         pieceX = 4;
         pieceY = 0;
         if (isCollision()) {
             gameOver = true;
             timer.stop();
-            SfxPlayer.play("Sfx/gg.wav");
-
-            new Thread(() -> {
-                try {
-                    Thread.sleep(3800);
-                } catch (InterruptedException ex) {
-                    ex.printStackTrace();
-                }
-                SwingUtilities.invokeLater(() -> showRestartDialog());
-            }).start();
         }
     }
+    holdUsed = true;
+}
 
     private void showRestartDialog() {
     int option = JOptionPane.showOptionDialog(
@@ -92,6 +121,24 @@ public class Tetris extends JPanel implements ActionListener, KeyListener {
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
+        // Next Queue
+        g.setColor(Color.WHITE);
+        g.drawString("NEXT", BOARD_WIDTH * CELL_SIZE + 20, 220);
+        g.drawString("HOLD", BOARD_WIDTH * CELL_SIZE + 20, 120);
+        for (int i = 0; i < 3; i++) {
+            Piece next = nextQueue[i];
+            if (next != null) {
+                int previewX = BOARD_WIDTH * CELL_SIZE + 20;
+                int previewY = 240 + i * 60;
+                drawMiniPiece(g, next, previewX, previewY, 15);
+            }
+        }
+        // Hold 區
+        if (holdPiece != null) {
+            drawMiniPiece(g, holdPiece, BOARD_WIDTH * CELL_SIZE + 20, 140, 15);
+        }
+
+
 
         g.setColor(Color.DARK_GRAY);
         for (int i = 0; i <= BOARD_WIDTH; i++) {
@@ -160,6 +207,29 @@ public class Tetris extends JPanel implements ActionListener, KeyListener {
                 board[y][x] = currentPiece.color.getRGB();
             }
         }
+    }
+    private void drawMiniPiece(Graphics g, Piece piece, int startX, int startY, int size) {
+        for (Point p : piece.shape) {
+            int x = startX + p.x * size;
+            int y = startY + p.y * size;
+            drawMiniBlock(g, x, y, size, piece.color);
+        }
+    }
+
+    private void drawMiniBlock(Graphics g, int x, int y, int size, Color baseColor) {
+        g.setColor(baseColor);
+        g.fillRect(x, y, size, size);
+
+        g.setColor(baseColor.brighter());
+        g.fillRect(x, y, size, size / 6);
+        g.fillRect(x, y, size / 6, size);
+
+        g.setColor(baseColor.darker());
+        g.fillRect(x, y + size - size / 6, size, size / 6);
+        g.fillRect(x + size - size / 6, y, size / 6, size);
+
+        g.setColor(Color.BLACK);
+        g.drawRect(x, y, size, size);
     }
 
     private void draw3DBlock(Graphics g, int x, int y, Color baseColor) {
@@ -264,7 +334,6 @@ public class Tetris extends JPanel implements ActionListener, KeyListener {
     if (!collision) {
         currentPiece.shape = rotated;
         pieceX = newPieceX;
-        SfxPlayer.play("Sfx/rotate.wav");
     }
 }
 
@@ -309,6 +378,8 @@ public class Tetris extends JPanel implements ActionListener, KeyListener {
             rotate(true);
         } else if (key == KeyEvent.VK_SLASH) {
             rotate(false);
+        } else if (key == KeyEvent.VK_C) {
+            holdCurrentPiece();
         } else if (key == KeyEvent.VK_SPACE) {
             while (!isCollision()) {
                 pieceY++;
@@ -373,4 +444,11 @@ class Piece {
         p.color = colors[idx];
         return p;
     }
+    public Piece(Piece other) {
+        this.shape = Arrays.stream(other.shape).map(p -> new Point(p.x, p.y)).toArray(Point[]::new);
+        this.color = other.color;
+        this.type = other.type;
+        this.rotationCount = other.rotationCount;
+    }
+    public Piece() {}
 }

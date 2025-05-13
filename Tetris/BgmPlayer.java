@@ -9,8 +9,7 @@ public class BgmPlayer {
     private String bgmFile;
     private List<String> tracks = Arrays.asList(
             "SoundTrack/Minecraft.wav",
-            "SoundTrack/Living Mice.wav",
-            "SoundTrack/Key.wav"
+            "SoundTrack/Wet Hands.wav"
     );
     public BgmPlayer(String filePath) {
         this.bgmFile = filePath;
@@ -18,8 +17,8 @@ public class BgmPlayer {
     public BgmPlayer() {
         this.tracks = Arrays.asList(
             "SoundTrack/Minecraft.wav",
-            "SoundTrack/Living Mice.wav",
-            "SoundTrack/Key.wav"
+            "SoundTrack/Wet Hands.wav"
+
         );
     }
     public void playLooped() {
