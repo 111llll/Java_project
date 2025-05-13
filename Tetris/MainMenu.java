@@ -79,6 +79,7 @@ public class MainMenu extends JFrame implements ActionListener {
         gameFrame.setVisible(true);
     }
 
+
     private void launchTwoPlayer() {
         bgm.stop();
         dispose();

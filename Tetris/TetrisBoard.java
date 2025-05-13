@@ -86,6 +86,7 @@ public class TetrisBoard extends JPanel implements ActionListener {
         }
         holdUsed = true;
     }
+
     public void dispatchKeyEvent(KeyEvent e) {
         if (gameOver) return;
 
@@ -107,6 +108,7 @@ public class TetrisBoard extends JPanel implements ActionListener {
                 }
             } else if (key == KeyEvent.VK_C) {
                 holdCurrentPiece();
+
             } else if (key == KeyEvent.VK_W) {
                 rotate(true);
             } else if (key == KeyEvent.VK_E) {
@@ -322,7 +324,6 @@ public class TetrisBoard extends JPanel implements ActionListener {
         if (holdPiece != null) {
             drawMiniPiece(g, holdPiece, BOARD_WIDTH * CELL_SIZE + 10, 100, 15);
         }
-
         g.setColor(Color.DARK_GRAY);
         for (int i = 0; i <= BOARD_WIDTH; i++) {
             g.drawLine(i * CELL_SIZE, 0, i * CELL_SIZE, BOARD_HEIGHT * CELL_SIZE);
@@ -377,6 +378,7 @@ public class TetrisBoard extends JPanel implements ActionListener {
         g.setColor(Color.BLACK);
         g.drawRect(x, y, size, size);
     }
+
     private void draw3DBlock(Graphics g, int x, int y, Color baseColor) {
         int size = CELL_SIZE;
         g.setColor(baseColor);
@@ -394,7 +396,6 @@ public class TetrisBoard extends JPanel implements ActionListener {
         g.drawRect(x, y, size, size);
     }
 }
-    
 
 class Piece {
     public Point[] shape;

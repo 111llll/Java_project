@@ -18,6 +18,7 @@ public class BgmPlayer {
         this.tracks = Arrays.asList(
             "SoundTrack/Minecraft.wav",
             "SoundTrack/Wet Hands.wav"
+
         );
     }
     public void playLooped() {
