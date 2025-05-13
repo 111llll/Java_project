@@ -10,6 +10,9 @@ public class Tetris extends JPanel implements ActionListener, KeyListener {
     private final int CELL_SIZE = 30;
 
     private Timer timer;
+    private Piece holdPiece = null;
+    private boolean holdUsed = false;
+    private Piece[] nextQueue = new Piece[3];
     private Piece currentPiece;
     private int pieceX = 4;
     private int pieceY = 0;
@@ -27,8 +30,8 @@ public class Tetris extends JPanel implements ActionListener, KeyListener {
         setFocusable(true);
         addKeyListener(this);
 
-        bgm = new BgmPlayer();
-        bgm.playAllLooped();
+        bgm = new BgmPlayer("SoundTrack/Minecraft.wav");
+        bgm.playLooped();
 
         spawnNewPiece();
 
@@ -37,43 +40,74 @@ public class Tetris extends JPanel implements ActionListener, KeyListener {
     }
 
     private void spawnNewPiece() {
-        currentPiece = Piece.getRandomPiece();
+    if (nextQueue[0] == null) {
+        for (int i = 0; i < 3; i++) {
+            nextQueue[i] = Piece.getRandomPiece();
+        }
+    }
+
+    currentPiece = nextQueue[0];
+    nextQueue[0] = nextQueue[1];
+    nextQueue[1] = nextQueue[2];
+    nextQueue[2] = Piece.getRandomPiece();
+
+    pieceX = 4;
+    pieceY = 0;
+    holdUsed = false;
+
+    if (isCollision()) {
+        gameOver = true;
+        timer.stop();
+        SfxPlayer.play("Sfx/gg.wav");
+        new Thread(() -> {
+            try { Thread.sleep(3800); } catch (InterruptedException ex) {}
+            SwingUtilities.invokeLater(this::showRestartDialog);
+        }).start();
+    }
+}
+
+private void holdCurrentPiece() {
+    if (holdUsed) return;
+
+    Piece temp = holdPiece;
+    holdPiece = new Piece(currentPiece); // clone
+    if (temp == null) {
+        spawnNewPiece();
+    } else {
+        currentPiece = new Piece(temp);
         pieceX = 4;
         pieceY = 0;
         if (isCollision()) {
             gameOver = true;
             timer.stop();
-            SfxPlayer.play("Sfx/gg.wav");
-
-            new Thread(() -> {
-                try {
-                    Thread.sleep(3800);
-                } catch (InterruptedException ex) {
-                    ex.printStackTrace();
-                }
-                SwingUtilities.invokeLater(() -> showRestartDialog());
-            }).start();
         }
     }
+    holdUsed = true;
+}
 
     private void showRestartDialog() {
-        int option = JOptionPane.showOptionDialog(
-                this,
-                "得分:" + score + "\n是否重新遊戲?",
-                "遊戲結束",
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.QUESTION_MESSAGE,
-                null,
-                new String[]{"重新", "退出"},
-                "Restart"
-        );
+    int option = JOptionPane.showOptionDialog(
+            this,
+            "得分:" + score + "\n是否重新遊戲?",
+            "遊戲結束",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.QUESTION_MESSAGE,
+            null,
+            new String[]{"重新", "回到主選單"},
+            "重新"
+    );
 
-        if (option == JOptionPane.YES_OPTION) {
-            resetGame();
-        } else {
-            System.exit(0);
-        }
+    if (option == JOptionPane.YES_OPTION) {
+        resetGame();
+    } else {
+        // 回到主選單
+        JFrame topFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
+        bgm.stop();
+        topFrame.dispose(); // 關掉當前遊戲視窗
+        new MainMenu().setVisible(true); // 開啟新的主選單視窗
     }
+}
+
 
     private void resetGame() {
         board = new int[BOARD_HEIGHT][BOARD_WIDTH];
@@ -87,6 +121,24 @@ public class Tetris extends JPanel implements ActionListener, KeyListener {
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
+        // Next Queue
+        g.setColor(Color.WHITE);
+        g.drawString("NEXT", BOARD_WIDTH * CELL_SIZE + 20, 220);
+        g.drawString("HOLD", BOARD_WIDTH * CELL_SIZE + 20, 120);
+        for (int i = 0; i < 3; i++) {
+            Piece next = nextQueue[i];
+            if (next != null) {
+                int previewX = BOARD_WIDTH * CELL_SIZE + 20;
+                int previewY = 240 + i * 60;
+                drawMiniPiece(g, next, previewX, previewY, 15);
+            }
+        }
+        // Hold 區
+        if (holdPiece != null) {
+            drawMiniPiece(g, holdPiece, BOARD_WIDTH * CELL_SIZE + 20, 140, 15);
+        }
+
+
 
         g.setColor(Color.DARK_GRAY);
         for (int i = 0; i <= BOARD_WIDTH; i++) {
@@ -156,6 +208,29 @@ public class Tetris extends JPanel implements ActionListener, KeyListener {
             }
         }
     }
+    private void drawMiniPiece(Graphics g, Piece piece, int startX, int startY, int size) {
+        for (Point p : piece.shape) {
+            int x = startX + p.x * size;
+            int y = startY + p.y * size;
+            drawMiniBlock(g, x, y, size, piece.color);
+        }
+    }
+
+    private void drawMiniBlock(Graphics g, int x, int y, int size, Color baseColor) {
+        g.setColor(baseColor);
+        g.fillRect(x, y, size, size);
+
+        g.setColor(baseColor.brighter());
+        g.fillRect(x, y, size, size / 6);
+        g.fillRect(x, y, size / 6, size);
+
+        g.setColor(baseColor.darker());
+        g.fillRect(x, y + size - size / 6, size, size / 6);
+        g.fillRect(x + size - size / 6, y, size / 6, size);
+
+        g.setColor(Color.BLACK);
+        g.drawRect(x, y, size, size);
+    }
 
     private void draw3DBlock(Graphics g, int x, int y, Color baseColor) {
         int size = CELL_SIZE;
@@ -214,37 +289,54 @@ public class Tetris extends JPanel implements ActionListener, KeyListener {
     }
 
     private void rotate(boolean clockwise) {
-        Point[] rotated = new Point[4];
-    
-        // Step 1: 找出中心點（使用平均座標法）
-        double centerX = 0, centerY = 0;
-        for (Point p : currentPiece.shape) {
-            centerX += p.x;
-            centerY += p.y;
-        }
-        centerX /= 4.0;
-        centerY /= 4.0;
-    
-        for (int i = 0; i < 4; i++) {
-            Point p = currentPiece.shape[i];
-    
-            // Step 2~4: 平移到原點 → 旋轉 → 移回中心
-            int dx = p.x - (int)Math.round(centerX);
-            int dy = p.y - (int)Math.round(centerY);
-            int newX = clockwise ? -dy : dy;
-            int newY = clockwise ? dx : -dx;
-    
-            rotated[i] = new Point(newX + (int)Math.round(centerX), newY + (int)Math.round(centerY));
-        }
-    
-        Point[] old = currentPiece.shape;
-        currentPiece.shape = rotated;
-        if (isCollision()) {
-            currentPiece.shape = old;
-        } else {
-            SfxPlayer.play("Sfx/rotate.wav");
+    // O 方塊不旋轉（type == 3）
+    if (currentPiece.type == 3) return;
+
+    Point[] rotated = new Point[4];
+    double centerX = 0, centerY = 0;
+    for (Point p : currentPiece.shape) {
+        centerX += p.x;
+        centerY += p.y;
+    }
+    centerX /= 4.0;
+    centerY /= 4.0;
+
+    for (int i = 0; i < 4; i++) {
+        Point p = currentPiece.shape[i];
+        int dx = p.x - (int)Math.round(centerX);
+        int dy = p.y - (int)Math.round(centerY);
+        int newX = clockwise ? -dy : dy;
+        int newY = clockwise ? dx : -dx;
+        rotated[i] = new Point(newX + (int)Math.round(centerX), newY + (int)Math.round(centerY));
+    }
+
+    // 每第二次旋轉時，特定方塊平移一格
+    int newPieceX = pieceX;
+    if (clockwise &&
+        (currentPiece.type == 0 || currentPiece.type == 4 || currentPiece.type == 6)) {
+        currentPiece.rotationCount++;
+        if (currentPiece.rotationCount % 2 == 0) {
+            newPieceX = pieceX - 1; // 向左移一格
         }
     }
+
+    // 檢查新位置是否合法
+    boolean collision = false;
+    for (Point p : rotated) {
+        int x = newPieceX + p.x;
+        int y = pieceY + p.y;
+        if (x < 0 || x >= BOARD_WIDTH || y < 0 || y >= BOARD_HEIGHT || board[y][x] != 0) {
+            collision = true;
+            break;
+        }
+    }
+
+    if (!collision) {
+        currentPiece.shape = rotated;
+        pieceX = newPieceX;
+    }
+}
+
     
     @Override
     public void keyPressed(KeyEvent e) {
@@ -286,6 +378,8 @@ public class Tetris extends JPanel implements ActionListener, KeyListener {
             rotate(true);
         } else if (key == KeyEvent.VK_SLASH) {
             rotate(false);
+        } else if (key == KeyEvent.VK_C) {
+            holdCurrentPiece();
         } else if (key == KeyEvent.VK_SPACE) {
             while (!isCollision()) {
                 pieceY++;
@@ -309,20 +403,22 @@ public class Tetris extends JPanel implements ActionListener, KeyListener {
     @Override
     public void keyTyped(KeyEvent e) {}
 
-    public static void main(String[] args) {
-        JFrame frame = new JFrame("Tetris");
-        Tetris tetris = new Tetris();
-        frame.add(tetris);
-        frame.pack();
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setLocationRelativeTo(null);
-        frame.setVisible(true);
-    }
+    // public static void main(String[] args) {
+    //     JFrame frame = new JFrame("Tetris");
+    //     Tetris tetris = new Tetris();
+    //     frame.add(tetris);
+    //     frame.pack();
+    //     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    //     frame.setLocationRelativeTo(null);
+    //     frame.setVisible(true);
+    // }
 }
 
 class Piece {
     public Point[] shape;
     public Color color;
+    public int type; // 加入方塊類型編號
+    public int rotationCount = 0; // 記錄旋轉次數
 
     private static final Point[][] shapes = {
             {new Point(0,0), new Point(1,0), new Point(2,0), new Point(3,0)}, // I
@@ -342,8 +438,17 @@ class Piece {
     public static Piece getRandomPiece() {
         int idx = new Random().nextInt(shapes.length);
         Piece p = new Piece();
+        p.type = idx;          // 把型別記起來
+        p.rotationCount = 0;   // 初始化旋轉計數
         p.shape = Arrays.stream(shapes[idx]).map(pt -> new Point(pt.x, pt.y)).toArray(Point[]::new);
         p.color = colors[idx];
         return p;
     }
+    public Piece(Piece other) {
+        this.shape = Arrays.stream(other.shape).map(p -> new Point(p.x, p.y)).toArray(Point[]::new);
+        this.color = other.color;
+        this.type = other.type;
+        this.rotationCount = other.rotationCount;
+    }
+    public Piece() {}
 }
