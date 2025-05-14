@@ -8,7 +8,8 @@ public class TetrisBoard extends JPanel implements ActionListener {
     private final int BOARD_WIDTH = 10;
     private final int BOARD_HEIGHT = 18;
     private final int CELL_SIZE = 30;
-
+    
+    private boolean isFrozen = false;
     private Timer timer;
     private Piece currentPiece;
     private Piece holdPiece = null;
@@ -17,7 +18,6 @@ public class TetrisBoard extends JPanel implements ActionListener {
     private int pieceX = 4;
     private int pieceY = 0;
     private int[][] board = new int[BOARD_HEIGHT][BOARD_WIDTH];
-    private int score = 0;
     private boolean gameOver = false;
     private boolean isPlayerOne;
     private String playerName;
@@ -88,7 +88,7 @@ public class TetrisBoard extends JPanel implements ActionListener {
     }
 
     public void dispatchKeyEvent(KeyEvent e) {
-        if (gameOver) return;
+        if (gameOver || isFrozen) return;
 
         int key = e.getKeyCode();
         if (isPlayerOne) {
@@ -224,28 +224,14 @@ public class TetrisBoard extends JPanel implements ActionListener {
                 Arrays.fill(board[0], 0);
             }
         }
-        switch (linesCleared) {
-            case 1 -> {
-                score += 100;
-                SfxPlayer.play("Sfx/1.wav");
-            }
-            case 2 -> {
-                score += 300;
-                SfxPlayer.play("Sfx/2.wav");
-            }
-            case 3 -> {
-                score += 500;
-                SfxPlayer.play("Sfx/3.wav");
-            }
-            case 4 -> {
-                score += 800;
-                SfxPlayer.play("Sfx/4.wav");
-            }
-        }
     }
 
     public void triggerGameOver(String winner) {
         if (opponent != null) {
+            this.timer.stop();
+            opponent.timer.stop();
+            this.isFrozen = true;
+            opponent.isFrozen = true;
             this.timer.stop();
             opponent.timer.stop();
             new Thread(() -> {
@@ -291,8 +277,8 @@ public class TetrisBoard extends JPanel implements ActionListener {
 
     public void resetGame() {
         board = new int[BOARD_HEIGHT][BOARD_WIDTH];
-        score = 0;
         gameOver = false;
+        isFrozen = false;
         spawnNewPiece();
         repaint();
     }
@@ -349,7 +335,7 @@ public class TetrisBoard extends JPanel implements ActionListener {
         }
 
         g.setColor(Color.WHITE);
-        g.drawString(playerName + " \n\r分數: " + score, BOARD_WIDTH * CELL_SIZE + 10, 20);
+        g.drawString(playerName , BOARD_WIDTH * CELL_SIZE + 10, 20);
         if (gameOver) {
             g.setColor(Color.RED);
             g.drawString("GAME OVER", BOARD_WIDTH * CELL_SIZE + 10, 50);
@@ -394,40 +380,5 @@ public class TetrisBoard extends JPanel implements ActionListener {
 
         g.setColor(Color.BLACK);
         g.drawRect(x, y, size, size);
-    }
-}
-
-class Piece {
-    public Point[] shape;
-    public Color color;
-    public int type;
-
-    private static final Point[][] shapes = {
-            {new Point(0,0), new Point(1,0), new Point(2,0), new Point(3,0)},
-            {new Point(0,0), new Point(0,1), new Point(1,1), new Point(2,1)},
-            {new Point(2,0), new Point(0,1), new Point(1,1), new Point(2,1)},
-            {new Point(0,0), new Point(1,0), new Point(0,1), new Point(1,1)},
-            {new Point(1,0), new Point(2,0), new Point(0,1), new Point(1,1)},
-            {new Point(1,0), new Point(0,1), new Point(1,1), new Point(2,1)},
-            {new Point(0,0), new Point(1,0), new Point(1,1), new Point(2,1)}
-    };
-
-    private static final Color[] colors = {
-            Color.CYAN, Color.BLUE, Color.ORANGE, Color.YELLOW,
-            Color.GREEN, Color.MAGENTA, Color.RED
-    };
-    public Piece() {}
-    public Piece(Piece other) {
-        this.shape = Arrays.stream(other.shape).map(p -> new Point(p.x, p.y)).toArray(Point[]::new);
-        this.color = other.color;
-        this.type = other.type;
-    }
-    public static Piece getRandomPiece() {
-        int idx = new Random().nextInt(shapes.length);
-        Piece p = new Piece();
-        p.shape = Arrays.stream(shapes[idx]).map(pt -> new Point(pt.x, pt.y)).toArray(Point[]::new);
-        p.color = colors[idx];
-        p.type = idx;
-        return p;
     }
 }
