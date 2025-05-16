@@ -421,13 +421,13 @@ class Piece {
     public int rotationCount = 0; // 記錄旋轉次數
 
     private static final Point[][] shapes = {
-            {new Point(0,0), new Point(1,0), new Point(2,0), new Point(3,0)}, // I
-            {new Point(0,0), new Point(0,1), new Point(1,1), new Point(2,1)}, // J
-            {new Point(2,0), new Point(0,1), new Point(1,1), new Point(2,1)}, // L
-            {new Point(0,0), new Point(1,0), new Point(0,1), new Point(1,1)}, // O
-            {new Point(1,0), new Point(2,0), new Point(0,1), new Point(1,1)}, // S
-            {new Point(1,0), new Point(0,1), new Point(1,1), new Point(2,1)}, // T
-            {new Point(0,0), new Point(1,0), new Point(1,1), new Point(2,1)}  // Z
+            {new Point(0,0), new Point(1,0), new Point(2,0), new Point(3,0)}, 
+            {new Point(0,0), new Point(0,1), new Point(1,1), new Point(2,1)}, 
+            {new Point(2,0), new Point(0,1), new Point(1,1), new Point(2,1)}, 
+            {new Point(0,0), new Point(1,0), new Point(0,1), new Point(1,1)}, 
+            {new Point(1,0), new Point(2,0), new Point(0,1), new Point(1,1)}, 
+            {new Point(1,0), new Point(0,1), new Point(1,1), new Point(2,1)}, 
+            {new Point(0,0), new Point(1,0), new Point(1,1), new Point(2,1)}  
     };
 
     private static final Color[] colors = {
