@@ -235,42 +235,42 @@ public class TetrisBoard extends JPanel implements ActionListener {
             this.timer.stop();
             opponent.timer.stop();
             new Thread(() -> {
-    try {
-        Thread.sleep(3800); // 延遲 3.8 秒
-    } catch (InterruptedException ex) {
-        ex.printStackTrace();
-    }
+            try {
+                Thread.sleep(3800); // 延遲 3.8 秒
+            } catch (InterruptedException ex) {
+                ex.printStackTrace();
+            }
 
-    SwingUtilities.invokeLater(() -> {
-    int option = JOptionPane.showOptionDialog(
-        this.getParent(),
-        winner + " 獲勝！是否重新開始？",
-        "遊戲結束",
-        JOptionPane.YES_NO_OPTION,
-        JOptionPane.INFORMATION_MESSAGE,
-        null,
-        new String[]{"重新", "回到主選單"},
-        "重新"
-    );
+            SwingUtilities.invokeLater(() -> {
+            int option = JOptionPane.showOptionDialog(
+                this.getParent(),
+                winner + " 獲勝！是否重新開始？",
+                "遊戲結束",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.INFORMATION_MESSAGE,
+                null,
+                new String[]{"重新", "回到主選單"},
+                "重新"
+            );
 
-    if (option == JOptionPane.YES_OPTION) {
-        this.resetGame();
-        opponent.resetGame();
-        this.timer.start();
-        opponent.timer.start();
-    } else {
-        // ✅ 停止雙方 BGM（在回主選單前）
-        if (this.bgm != null) this.bgm.stop();
-        if (opponent.bgm != null) opponent.bgm.stop();
+            if (option == JOptionPane.YES_OPTION) {
+                this.resetGame();
+                opponent.resetGame();
+                this.timer.start();
+                opponent.timer.start();
+            } else {
+                // ✅ 停止雙方 BGM（在回主選單前）
+                if (this.bgm != null) this.bgm.stop();
+                if (opponent.bgm != null) opponent.bgm.stop();
 
-        JFrame topFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
-        topFrame.dispose(); // 關閉雙人視窗
-        new MainMenu().setVisible(true); // 回到主選單
-    }
-});
+                JFrame topFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
+                topFrame.dispose(); // 關閉雙人視窗
+                new MainMenu().setVisible(true); // 回到主選單
+            }
+        });
 
 
-}).start();
+        }).start();
 
         }
     }
